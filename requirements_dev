@@ -1,0 +1,20 @@
+# Standard Python Development Environment
+# =======================================
+
+# For neovim
+pynvim
+
+# For lsp
+rope
+pyflakes
+mccabe
+pycodestyle
+pydocstyle
+autopep8
+yapf
+flake8
+pylint
+python-lsp-server
+
+# For repl
+ipython

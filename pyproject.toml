@@ -1,0 +1,11 @@
+[project]
+name = "option-search"
+version = "2026.04.11"
+description = "Options screener using Schwab API"
+
+[build-system]
+requires = ["setuptools >= 61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,5 @@
+# List required packages in this list below
+# =========================================
+
+django>=5.0
+schwab-py>=1.4
