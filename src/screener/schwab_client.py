@@ -22,9 +22,9 @@ def get_client() -> schwab.client.Client:
     )
 
 
-def get_option_chain(symbol: str) -> tuple[list[dict], float]:
+def get_option_chain(symbol: str) -> tuple[list[dict], float, str]:
     """
-    Return (options, underlying_price) for *symbol*.
+    Return (options, underlying_price, underlying_name) for *symbol*.
 
     *options* is a flat list of normalized option dicts (one per contract).
     """
@@ -34,6 +34,7 @@ def get_option_chain(symbol: str) -> tuple[list[dict], float]:
     data = response.json()
 
     underlying_price: float = data.get("underlyingPrice", 0.0) or 0.0
+    underlying_name: str = _get_underlying_name(client, symbol)
     options: list[dict] = []
 
     for put_call, date_map in (
@@ -48,7 +49,19 @@ def get_option_chain(symbol: str) -> tuple[list[dict], float]:
                     options.append(_normalize(raw, underlying_price))
 
     logger.debug("Fetched %d contracts for %s", len(options), symbol)
-    return options, underlying_price
+    return options, underlying_price, underlying_name
+
+
+def _get_underlying_name(client: schwab.client.Client, symbol: str) -> str:
+    """Return the company description for *symbol*, or '' on any failure."""
+    try:
+        resp = client.get_quote(symbol.upper())
+        resp.raise_for_status()
+        quote = resp.json()
+        return (quote.get(symbol.upper()) or {}).get("reference", {}).get("description", "") or ""
+    except Exception:
+        logger.debug("Could not fetch quote description for %s", symbol)
+        return ""
 
 
 def _normalize(raw: dict, underlying_price: float) -> dict:

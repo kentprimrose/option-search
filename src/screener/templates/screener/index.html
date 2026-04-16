@@ -11,46 +11,40 @@
   <style>
     body { background: #f8f9fa; }
     .criteria-card { border: 1px solid #dee2e6; border-radius: .5rem; background: #fff; }
-    .criteria-card .card-header { cursor: pointer; user-select: none; }
+    .criteria-body { display: none; }
+    .criteria-body.expanded { display: block; }
     .criteria-params { display: none; }
     .criteria-params.visible { display: block; }
+    .criteria-chevron { background: none; border: none; padding: 0; line-height: 1; color: #6c757d; font-size: .8rem; flex-shrink: 0; }
     .table-sm td, .table-sm th { vertical-align: middle; }
     .badge-put { background-color: #dc3545; }
     .badge-call { background-color: #0d6efd; }
     .itm-row { background-color: #fff3cd; }
+    #results-scroll { max-height: 60vh; overflow-y: auto; }
+    #results-table thead th { cursor: pointer; user-select: none; white-space: nowrap; position: sticky; top: 0; z-index: 2; background-color: #212529; }
+    #results-table thead th:hover { background-color: #495057; }
+    .sort-ind { font-size: .7em; opacity: .75; }
+    .atm-row { outline: 2px solid #0d6efd; outline-offset: -1px; }
   </style>
 </head>
 <body>
 <div class="container py-4">
 
-  <h1 class="mb-1">Option Search</h1>
-  <p class="text-muted mb-4">Fetch and filter an option chain using the Schwab API.</p>
-
   <form method="post" id="search-form">
     {% csrf_token %}
 
-    <!-- ── Ticker & sort ─────────────────────────────────────── -->
-    <div class="row g-2 mb-4 align-items-end">
-      <div class="col-auto">
-        <label for="symbol" class="form-label fw-semibold">Ticker Symbol</label>
+    <!-- ── Title & search bar ────────────────────────────────── -->
+    <div class="d-flex align-items-start justify-content-between mb-4">
+      <h1 class="mb-0 lh-1">Option Search</h1>
+      <div class="d-flex align-items-end gap-2">
         <input type="text" id="symbol" name="symbol"
-               class="form-control form-control-lg text-uppercase"
+               class="form-control text-uppercase"
                placeholder="e.g. AAPL"
                value="{{ symbol }}"
-               style="width: 12rem;"
+               style="width: 9rem;"
                autocomplete="off"
                required>
-      </div>
-      <div class="col-auto">
-        <label for="sort_by" class="form-label fw-semibold">Sort by</label>
-        <select id="sort_by" name="sort_by" class="form-select">
-          {% for key in sort_options %}
-            <option value="{{ key }}" {% if sort_by == key %}selected{% endif %}>{{ key|title }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="col-auto">
-        <button type="submit" class="btn btn-primary btn-lg">Search</button>
+        <button type="submit" class="btn btn-primary">Search</button>
       </div>
     </div>
 
@@ -59,55 +53,61 @@
     <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3 mb-4">
       {% for criterion in criteria %}
       <div class="col">
-        <div class="criteria-card p-3 h-100">
-          <div class="d-flex align-items-start gap-2">
+        <div class="criteria-card p-3">
+          <!-- ── Header row: always visible ── -->
+          <div class="d-flex align-items-center gap-2">
             <input
               type="checkbox"
-              class="form-check-input flex-shrink-0 mt-1 criteria-toggle"
+              class="form-check-input flex-shrink-0 criteria-toggle"
               id="enable_{{ criterion.id }}"
               name="{{ criterion.enable_field_name }}"
               data-target="params_{{ criterion.id }}"
               {% if criterion.enable_field_name in form_data %}checked{% endif %}>
-            <div class="flex-grow-1">
-              <label for="enable_{{ criterion.id }}" class="form-check-label fw-semibold d-block" style="cursor:pointer;">
-                {{ criterion.name }}
-              </label>
-              <small class="text-muted">{{ criterion.description }}</small>
-
-              <!-- Parameter fields (shown when checkbox is checked) -->
-              {% if criterion.form_fields %}
-              <div id="params_{{ criterion.id }}"
-                   class="criteria-params mt-2{% if criterion.enable_field_name in form_data %} visible{% endif %}">
-                {% for field in criterion.form_fields %}
-                <div class="mb-2">
-                  <label for="{{ field.name }}" class="form-label form-label-sm mb-1">{{ field.label }}</label>
-                  {% if field.field_type == "select" %}
-                    <select id="{{ field.name }}" name="{{ field.name }}" class="form-select form-select-sm">
-                      {% for val, label in field.choices %}
-                        <option value="{{ val }}"
-                          {% if val == field.default %}selected{% endif %}>
-                          {{ label }}
-                        </option>
-                      {% endfor %}
-                    </select>
-                  {% else %}
-                    <input
-                      type="{{ field.field_type }}"
-                      id="{{ field.name }}"
-                      name="{{ field.name }}"
-                      class="form-control form-control-sm"
-                      {% if field.min is not None %}min="{{ field.min }}"{% endif %}
-                      {% if field.max is not None %}max="{{ field.max }}"{% endif %}
-                      step="{{ field.step }}"
-                      value="{{ field.default }}">
-                  {% endif %}
-                </div>
-                {% endfor %}
-              </div>
-              {% endif %}
-
-            </div>
+            <label for="enable_{{ criterion.id }}" class="form-check-label fw-semibold flex-grow-1 mb-0" style="cursor:pointer;">
+              {{ criterion.name }}
+            </label>
+            <button type="button"
+                    class="criteria-chevron criteria-expand"
+                    data-target="body_{{ criterion.id }}"
+                    aria-label="expand">▸</button>
           </div>
+
+          <!-- ── Collapsible body: description + params ── -->
+          <div id="body_{{ criterion.id }}" class="criteria-body mt-2">
+            <small class="text-muted d-block mb-2">{{ criterion.description }}</small>
+
+            {% if criterion.form_fields %}
+            <div id="params_{{ criterion.id }}"
+                 class="criteria-params{% if criterion.enable_field_name in form_data %} visible{% endif %}">
+              {% for field in criterion.form_fields %}
+              <div class="mb-2">
+                <label for="{{ field.name }}" class="form-label form-label-sm mb-1">{{ field.label }}</label>
+                {% if field.field_type == "select" %}
+                  <select id="{{ field.name }}" name="{{ field.name }}" class="form-select form-select-sm">
+                    {% for val, label in field.choices %}
+                      <option value="{{ val }}"
+                        {% if val == field.default %}selected{% endif %}>
+                        {{ label }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                {% else %}
+                  <input
+                    type="{{ field.field_type }}"
+                    id="{{ field.name }}"
+                    name="{{ field.name }}"
+                    class="form-control form-control-sm"
+                    {% if field.min is not None %}min="{{ field.min }}"{% endif %}
+                    {% if field.max is not None %}max="{{ field.max }}"{% endif %}
+                    step="{{ field.step }}"
+                    value="{{ field.default }}">
+                {% endif %}
+              </div>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+
         </div>
       </div>
       {% endfor %}
@@ -124,56 +124,66 @@
 
   <!-- ── Results ───────────────────────────────────────────── -->
   {% if options is not None %}
-  <div class="d-flex align-items-baseline gap-3 mb-2">
-    <h5 class="mb-0">Results for {{ symbol }}</h5>
-    <span class="text-muted small">
-      {% if underlying_price %}Underlying: <strong>${{ underlying_price|floatformat:2 }}</strong> &mdash; {% endif %}
-      <strong>{{ result_count }}</strong> contract{{ result_count|pluralize }} matched
-    </span>
+  <div class="d-flex align-items-baseline justify-content-between mb-2">
+    <div class="d-flex align-items-baseline gap-3">
+      <h5 class="mb-0">Results for {{ symbol }}{% if underlying_name %} <span class="fw-normal text-muted fst-italic">({{ underlying_name }})</span>{% endif %}</h5>
+      <span class="text-muted small">
+        {% if underlying_price %}Underlying: <strong>${{ underlying_price|floatformat:2 }}</strong> &mdash; {% endif %}
+        <strong>{{ result_count }}</strong> contract{{ result_count|pluralize }} matched
+      </span>
+    </div>
+    <div class="d-flex align-items-center gap-2 flex-shrink-0 text-nowrap">
+      <label for="sort_by" class="form-label fw-semibold mb-0">Sort by</label>
+      <select id="sort_by" name="sort_by" class="form-select form-select-sm" form="search-form">
+        {% for key in sort_options %}
+          <option value="{{ key }}" {% if sort_by == key %}selected{% endif %}>{{ key|title }}</option>
+        {% endfor %}
+      </select>
+    </div>
   </div>
 
   {% if options %}
-  <div class="table-responsive">
-    <table class="table table-sm table-hover table-bordered align-middle">
+  <div class="table-responsive" id="results-scroll">
+    <table class="table table-sm table-hover table-bordered align-middle" id="results-table">
       <thead class="table-dark">
         <tr>
-          <th>Type</th>
-          <th>Strike</th>
-          <th>Expiration</th>
-          <th>DTE</th>
-          <th>Bid</th>
-          <th>Ask</th>
-          <th>Mark</th>
-          <th>Delta</th>
-          <th>IV%</th>
-          <th>Time Value</th>
-          <th>TV%</th>
-          <th>OI</th>
-          <th>Volume</th>
-          <th>ITM</th>
+          <th class="text-center" title="Put or Call">Type</th>
+          <th class="text-center" title="Option strike price">Strike</th>
+          <th class="text-center" title="Expiration date">Expiration</th>
+          <th class="text-center" title="Days to expiration">DTE</th>
+          <th class="text-center" title="Current bid price">Bid</th>
+          <th class="text-center" title="Current ask price">Ask</th>
+          <th class="text-center" title="Mid-point of bid/ask spread">Mark</th>
+          <th class="text-center" title="Rate of change in option price per $1 move in the underlying (negative for puts)">Delta</th>
+          <th class="text-center" title="Implied volatility as a percentage">IV%</th>
+          <th class="text-center" title="Portion of the option premium above intrinsic value">Time Value</th>
+          <th class="text-center" title="Time value as a percentage of the underlying price">TV%</th>
+          <th class="text-center" title="Total number of outstanding open contracts">OI</th>
+          <th class="text-center" title="Number of contracts traded today">Volume</th>
+          <th class="text-center" title="Whether the option is in the money">ITM</th>
         </tr>
       </thead>
       <tbody>
         {% for opt in options %}
         <tr{% if opt.inTheMoney %} class="itm-row"{% endif %}>
-          <td>
+          <td class="text-center">
             <span class="badge {% if opt.putCall == 'PUT' %}badge-put{% else %}badge-call{% endif %}">
               {{ opt.putCall }}
             </span>
           </td>
-          <td>${{ opt.strikePrice|floatformat:2 }}</td>
-          <td>{{ opt.expirationDate }}</td>
-          <td>{{ opt.daysToExpiration }}</td>
-          <td>${{ opt.bid|floatformat:2 }}</td>
-          <td>${{ opt.ask|floatformat:2 }}</td>
-          <td>${{ opt.mark|floatformat:2 }}</td>
-          <td>{{ opt.delta|floatformat:3 }}</td>
-          <td>{{ opt.volatility|floatformat:1 }}%</td>
-          <td>${{ opt.timeValue|floatformat:2 }}</td>
-          <td>{{ opt.timeValuePct|floatformat:2 }}%</td>
-          <td>{{ opt.openInterest }}</td>
-          <td>{{ opt.volume }}</td>
-          <td>{% if opt.inTheMoney %}&#10003;{% endif %}</td>
+          <td class="text-end">${{ opt.strikePrice|floatformat:2 }}</td>
+          <td class="text-center">{{ opt.expirationDate }}</td>
+          <td class="text-end">{{ opt.daysToExpiration }}</td>
+          <td class="text-end">${{ opt.bid|floatformat:2 }}</td>
+          <td class="text-end">${{ opt.ask|floatformat:2 }}</td>
+          <td class="text-end">${{ opt.mark|floatformat:2 }}</td>
+          <td class="text-end">{{ opt.delta|floatformat:3 }}</td>
+          <td class="text-end">{{ opt.volatility|floatformat:1 }}%</td>
+          <td class="text-end">${{ opt.timeValue|floatformat:2 }}</td>
+          <td class="text-end">{{ opt.timeValuePct|floatformat:2 }}%</td>
+          <td class="text-end">{{ opt.openInterest }}</td>
+          <td class="text-end">{{ opt.volume }}</td>
+          <td class="text-center">{% if opt.inTheMoney %}&#10003;{% endif %}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -187,6 +197,18 @@
 </div>
 
 <script>
+  // Expand/collapse criteria body when chevron is clicked
+  document.querySelectorAll('.criteria-expand').forEach(function(btn) {
+    var body = document.getElementById(btn.dataset.target);
+    // Sync initial chevron direction
+    btn.textContent = body && body.classList.contains('expanded') ? '▾' : '▸';
+    btn.addEventListener('click', function() {
+      if (!body) return;
+      var expanded = body.classList.toggle('expanded');
+      btn.textContent = expanded ? '▾' : '▸';
+    });
+  });
+
   // Toggle parameter sections when criteria checkboxes are clicked
   document.querySelectorAll('.criteria-toggle').forEach(function(cb) {
     cb.addEventListener('change', function() {
@@ -210,6 +232,88 @@
       el.value = formData[name];
     }
   });
+
+  // ── Sortable results table ──────────────────────────────────
+  (function () {
+    var table = document.getElementById('results-table');
+    if (!table) return;
+
+    var headers = Array.from(table.querySelectorAll('thead th'));
+    var sortCol = -1, sortAsc = true;
+
+    // Wrap each header label and append an indicator span
+    headers.forEach(function (th, idx) {
+      var label = th.textContent;
+      th.innerHTML =
+        '<span class="col-label">' + label + '</span>' +
+        '<span class="sort-ind ms-1"></span>';
+      th.addEventListener('click', function () {
+        if (sortCol === idx) sortAsc = !sortAsc;
+        else { sortCol = idx; sortAsc = true; }
+        sortTable(idx, sortAsc);
+        updateIndicators();
+        markAndScrollATM();
+      });
+    });
+
+    function getCellValue(row, idx) {
+      // Strip currency/percent/check symbols; parse as number when possible
+      var text = row.cells[idx].textContent.trim().replace(/[$%,\u2713]/g, '');
+      var num = parseFloat(text);
+      return isNaN(num) ? text.toLowerCase() : num;
+    }
+
+    function sortTable(col, asc) {
+      var tbody = table.querySelector('tbody');
+      var rows = Array.from(tbody.rows);
+      rows.sort(function (a, b) {
+        var va = getCellValue(a, col);
+        var vb = getCellValue(b, col);
+        if (typeof va === 'string' && typeof vb === 'string')
+          return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+        if (va < vb) return asc ? -1 : 1;
+        if (va > vb) return asc ? 1 : -1;
+        return 0;
+      });
+      rows.forEach(function (r) { tbody.appendChild(r); });
+    }
+
+    function updateIndicators() {
+      headers.forEach(function (th, idx) {
+        var ind = th.querySelector('.sort-ind');
+        if (ind) ind.textContent = idx === sortCol ? (sortAsc ? '▲' : '▼') : '';
+      });
+    }
+
+    // ── ATM row highlighting & scroll ───────────────────────────
+    var underlyingPrice = {{ underlying_price|default:0 }};
+
+    function markAndScrollATM() {
+      if (!underlyingPrice) return;
+      var tbody = table.querySelector('tbody');
+      var rows = Array.from(tbody.rows);
+      var bestRow = null, bestDiff = Infinity;
+
+      rows.forEach(function (row) {
+        row.classList.remove('atm-row');
+        var strike = parseFloat(row.cells[1].textContent.replace(/[$,]/g, ''));
+        if (!isNaN(strike)) {
+          var diff = Math.abs(strike - underlyingPrice);
+          if (diff < bestDiff) { bestDiff = diff; bestRow = row; }
+        }
+      });
+
+      if (bestRow) {
+        bestRow.classList.add('atm-row');
+        var container = document.getElementById('results-scroll');
+        var theadHeight = table.querySelector('thead').offsetHeight;
+        var visibleHeight = container.clientHeight - theadHeight;
+        container.scrollTop = bestRow.offsetTop - theadHeight - visibleHeight / 2 + bestRow.offsetHeight / 2;
+      }
+    }
+
+    markAndScrollATM();
+  })();
 </script>
 </body>
 </html>

@@ -29,6 +29,7 @@ def index(request):
         "error": None,
         "options": None,
         "underlying_price": None,
+        "underlying_name": "",
         "symbol": "",
         "sort_by": "strike",
         "result_count": 0,
@@ -52,8 +53,9 @@ def index(request):
         return render(request, "screener/index.html", context)
 
     try:
-        options, underlying_price = get_option_chain(symbol)
+        options, underlying_price, underlying_name = get_option_chain(symbol)
         context["underlying_price"] = underlying_price
+        context["underlying_name"] = underlying_name
 
         for criterion in criteria:
             if criterion.is_enabled(form_data):

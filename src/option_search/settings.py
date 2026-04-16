@@ -48,7 +48,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Schwab API configuration
 SCHWAB_API_KEY = os.environ.get("SCHWAB_API_KEY", "")
 SCHWAB_APP_SECRET = os.environ.get("SCHWAB_APP_SECRET", "")
-SCHWAB_CALLBACK_URL = os.environ.get("SCHWAB_CALLBACK_URL", "https://127.0.0.1")
+SCHWAB_CALLBACK_URL = os.environ.get("SCHWAB_CALLBACK_URL", "https://127.0.0.1:8182")
 SCHWAB_TOKEN_PATH = os.environ.get(
     "SCHWAB_TOKEN_PATH",
     str(Path.home() / ".schwab_token.json"),
