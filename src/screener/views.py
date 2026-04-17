@@ -61,8 +61,11 @@ def index(request):
             if criterion.is_enabled(form_data):
                 options = criterion.apply(options, underlying_price, form_data)
 
-        sort_field, reverse = _SORT_FIELDS.get(sort_by, ("strikePrice", False))
-        options.sort(key=lambda o: o.get(sort_field) or 0, reverse=reverse)
+        options.sort(key=lambda o: (
+            o.get("strikePrice") or 0,
+            o.get("expirationDate") or "",
+            o.get("putCall") or "",
+        ))
 
         context["options"] = options
         context["result_count"] = len(options)

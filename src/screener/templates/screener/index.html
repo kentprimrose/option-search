@@ -347,14 +347,6 @@
         <strong>{{ result_count }}</strong> contracts found
       </div>
     </div>
-    <div class="form-field" style="margin-bottom: 0; min-width: 150px;">
-      <label for="sort_by">Sort By</label>
-      <select id="sort_by" name="sort_by" form="search-form" onchange="this.form.submit()">
-        {% for key in sort_options %}
-          <option value="{{ key }}" {% if sort_by == key %}selected{% endif %}>{{ key|title }}</option>
-        {% endfor %}
-      </select>
-    </div>
   </div>
 
   {% if options %}
@@ -364,7 +356,7 @@
         <tr>
           <th class="text-center">Type</th>
           <th>Strike</th>
-          <th>Exp</th>
+          <th>Expiration</th>
           <th>DTE</th>
           <th>Bid</th>
           <th>Ask</th>
