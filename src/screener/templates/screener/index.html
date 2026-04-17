@@ -4,137 +4,352 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Option Search{% if symbol %} — {{ symbol }}{% endif %}</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
-        crossorigin="anonymous">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    body { background: #f8f9fa; }
-    .criteria-card { border: 1px solid #dee2e6; border-radius: .5rem; background: #fff; }
-    .criteria-body { display: none; }
-    .criteria-body.expanded { display: block; }
-    .criteria-params { display: none; }
-    .criteria-params.visible { display: block; }
-    .criteria-chevron { background: none; border: none; padding: 0; line-height: 1; color: #6c757d; font-size: .8rem; flex-shrink: 0; }
-    .table-sm td, .table-sm th { vertical-align: middle; }
-    .badge-put { background-color: #dc3545; }
-    .badge-call { background-color: #0d6efd; }
-    .itm-row { background-color: #fff3cd; }
-    #results-scroll { max-height: 60vh; overflow-y: auto; }
-    #results-table thead th { cursor: pointer; user-select: none; white-space: nowrap; position: sticky; top: 0; z-index: 2; background-color: #212529; }
-    #results-table thead th:hover { background-color: #495057; }
-    .sort-ind { font-size: .7em; opacity: .75; }
-    .atm-row { outline: 2px solid #0d6efd; outline-offset: -1px; }
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --border: #334155;
+      --danger: #ef4444;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 3rem;
+    }
+
+    h1 {
+      font-size: 1.875rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      margin: 0;
+    }
+
+    .search-group {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    input, select {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 0.5rem 1.25rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover { background: var(--accent-hover); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+      align-items: start;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .card:hover { border-color: var(--accent); }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-title {
+      font-weight: 600;
+      font-size: 1rem;
+      flex-grow: 1;
+      cursor: pointer;
+    }
+
+    .card-summary {
+      font-weight: 400;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      margin-left: 0.5rem;
+    }
+
+    .card-description {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+
+    .params-grid {
+      display: grid;
+      gap: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .form-field label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 0.375rem;
+    }
+
+    .form-field input, .form-field select {
+      width: 100%;
+    }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .results-info h2 {
+      font-size: 1.25rem;
+      margin: 0 0 0.25rem 0;
+    }
+
+    .stats {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .stats strong { color: var(--text-main); }
+
+    .table-container {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      overflow: auto;
+      max-height: 70vh;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      text-align: left;
+    }
+
+    th {
+      background: #1e293b;
+      padding: 0.75rem 1rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 0.7rem;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    th:hover { color: var(--text-main); }
+
+    td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-mono);
+    }
+
+    tr:hover td { background: #334155; }
+
+    .badge {
+      font-family: var(--font-sans);
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    .badge-put { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+    .badge-call { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+
+    .itm-row td { color: #fcd34d; }
+    .atm-row td { background: rgba(59, 130, 246, 0.15); border-top: 1px solid var(--accent); border-bottom: 1px solid var(--accent); }
+
+    .alert {
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-bottom: 2rem;
+      font-size: 0.875rem;
+    }
+
+    .alert-danger { background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); color: #fca5a5; }
+    .alert-info { background: rgba(59, 130, 246, 0.1); border: 1px solid var(--accent); color: #93c5fd; }
+
+    .sort-icon {
+      display: inline-block;
+      width: 1rem;
+      margin-left: 0.25rem;
+      font-size: 0.6rem;
+    }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-color); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 768px) {
+      header { flex-direction: column; align-items: flex-start; gap: 1.5rem; }
+      .search-group { width: 100%; }
+      .search-group input { flex-grow: 1; }
+    }
   </style>
 </head>
 <body>
-<div class="container py-4">
+<div class="container">
 
   <form method="post" id="search-form">
     {% csrf_token %}
 
-    <!-- ── Title & search bar ────────────────────────────────── -->
-    <div class="d-flex align-items-start justify-content-between mb-4">
-      <h1 class="mb-0 lh-1">Option Search</h1>
-      <div class="d-flex align-items-end gap-2">
+    <header>
+      <h1>Option Search</h1>
+      <div class="search-group">
         <input type="text" id="symbol" name="symbol"
-               class="form-control text-uppercase"
-               placeholder="e.g. AAPL"
+               class="text-uppercase"
+               placeholder="TICKER (e.g. NVDA)"
                value="{{ symbol }}"
-               style="width: 9rem;"
                autocomplete="off"
                required>
-        <button type="submit" class="btn btn-primary">Search</button>
+        <button type="submit">Search</button>
       </div>
-    </div>
+    </header>
 
-    <!-- ── Criteria ──────────────────────────────────────────── -->
-    <h5 class="mb-3">Screening Criteria</h5>
-    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3 mb-4">
+    <div class="grid">
       {% for criterion in criteria %}
-      <div class="col">
-        <div class="criteria-card p-3">
-          <!-- ── Header row: always visible ── -->
-          <div class="d-flex align-items-center gap-2">
-            <input
-              type="checkbox"
-              class="form-check-input flex-shrink-0 criteria-toggle"
-              id="enable_{{ criterion.id }}"
-              name="{{ criterion.enable_field_name }}"
-              data-target="params_{{ criterion.id }}"
-              {% if criterion.enable_field_name in form_data %}checked{% endif %}>
-            <label for="enable_{{ criterion.id }}" class="form-check-label fw-semibold flex-grow-1 mb-0" style="cursor:pointer;">
-              {{ criterion.name }}
-            </label>
-            <button type="button"
-                    class="criteria-chevron criteria-expand"
-                    data-target="body_{{ criterion.id }}"
-                    aria-label="expand">▸</button>
-          </div>
+      <div class="card">
+        <div class="card-header">
+          <input
+            type="checkbox"
+            id="enable_{{ criterion.id }}"
+            name="{{ criterion.enable_field_name }}"
+            class="criteria-toggle"
+            data-target="params_{{ criterion.id }}"
+            {% if criterion.enable_field_name in form_data %}checked{% endif %}>
+          <label for="enable_{{ criterion.id }}" class="card-title">
+            {{ criterion.name }}<span class="card-summary" id="summary_{{ criterion.id }}"></span>
+          </label>
+          <button type="button" class="collapse-btn" data-target="body_{{ criterion.id }}" aria-label="Toggle">▶</button>
+        </div>
 
-          <!-- ── Collapsible body: description + params ── -->
-          <div id="body_{{ criterion.id }}" class="criteria-body mt-2">
-            <small class="text-muted d-block mb-2">{{ criterion.description }}</small>
+        <div id="body_{{ criterion.id }}" class="card-body hidden">
+          <p class="card-description">{{ criterion.description }}</p>
 
-            {% if criterion.form_fields %}
-            <div id="params_{{ criterion.id }}"
-                 class="criteria-params{% if criterion.enable_field_name in form_data %} visible{% endif %}">
-              {% for field in criterion.form_fields %}
-              <div class="mb-2">
-                <label for="{{ field.name }}" class="form-label form-label-sm mb-1">{{ field.label }}</label>
-                {% if field.field_type == "select" %}
-                  <select id="{{ field.name }}" name="{{ field.name }}" class="form-select form-select-sm">
-                    {% for val, label in field.choices %}
-                      <option value="{{ val }}"
-                        {% if val == field.default %}selected{% endif %}>
-                        {{ label }}
-                      </option>
-                    {% endfor %}
-                  </select>
-                {% else %}
-                  <input
-                    type="{{ field.field_type }}"
-                    id="{{ field.name }}"
-                    name="{{ field.name }}"
-                    class="form-control form-control-sm"
-                    {% if field.min is not None %}min="{{ field.min }}"{% endif %}
-                    {% if field.max is not None %}max="{{ field.max }}"{% endif %}
-                    step="{{ field.step }}"
-                    value="{{ field.default }}">
-                {% endif %}
-              </div>
-              {% endfor %}
+          {% if criterion.form_fields %}
+          <div id="params_{{ criterion.id }}" class="params-grid {% if criterion.enable_field_name not in form_data %}hidden{% endif %}">
+            {% for field in criterion.form_fields %}
+            <div class="form-field">
+              <label for="{{ field.name }}">{{ field.label }}</label>
+              {% if field.field_type == "select" %}
+                <select id="{{ field.name }}" name="{{ field.name }}">
+                  {% for val, label in field.choices %}
+                    <option value="{{ val }}" {% if val == field.default %}selected{% endif %}>
+                      {{ label }}
+                    </option>
+                  {% endfor %}
+                </select>
+              {% else %}
+                <input
+                  type="{{ field.field_type }}"
+                  id="{{ field.name }}"
+                  name="{{ field.name }}"
+                  {% if field.min is not None %}min="{{ field.min }}"{% endif %}
+                  {% if field.max is not None %}max="{{ field.max }}"{% endif %}
+                  step="{{ field.step }}"
+                  value="{{ field.default }}">
+              {% endif %}
             </div>
-            {% endif %}
+            {% endfor %}
           </div>
-
+          {% endif %}
         </div>
       </div>
       {% endfor %}
     </div>
-
   </form>
 
-  <!-- ── Error ─────────────────────────────────────────────── -->
   {% if error %}
-  <div class="alert alert-danger" role="alert">
+  <div class="alert alert-danger">
     <strong>Error:</strong> {{ error }}
   </div>
   {% endif %}
 
-  <!-- ── Results ───────────────────────────────────────────── -->
   {% if options is not None %}
-  <div class="d-flex align-items-baseline justify-content-between mb-2">
-    <div class="d-flex align-items-baseline gap-3">
-      <h5 class="mb-0">Results for {{ symbol }}{% if underlying_name %} <span class="fw-normal text-muted fst-italic">({{ underlying_name }})</span>{% endif %}</h5>
-      <span class="text-muted small">
-        {% if underlying_price %}Underlying: <strong>${{ underlying_price|floatformat:2 }}</strong> &mdash; {% endif %}
-        <strong>{{ result_count }}</strong> contract{{ result_count|pluralize }} matched
-      </span>
+  <div class="results-header">
+    <div class="results-info">
+      <h2>{{ symbol }} {% if underlying_name %}<small style="color: var(--text-muted); font-weight: 400; font-size: 0.9rem;">— {{ underlying_name }}</small>{% endif %}</h2>
+      <div class="stats">
+        {% if underlying_price %}Price: <strong>${{ underlying_price|floatformat:2 }}</strong> &bull; {% endif %}
+        <strong>{{ result_count }}</strong> contracts found
+      </div>
     </div>
-    <div class="d-flex align-items-center gap-2 flex-shrink-0 text-nowrap">
-      <label for="sort_by" class="form-label fw-semibold mb-0">Sort by</label>
-      <select id="sort_by" name="sort_by" class="form-select form-select-sm" form="search-form">
+    <div class="form-field" style="margin-bottom: 0; min-width: 150px;">
+      <label for="sort_by">Sort By</label>
+      <select id="sort_by" name="sort_by" form="search-form" onchange="this.form.submit()">
         {% for key in sort_options %}
           <option value="{{ key }}" {% if sort_by == key %}selected{% endif %}>{{ key|title }}</option>
         {% endfor %}
@@ -143,97 +358,136 @@
   </div>
 
   {% if options %}
-  <div class="table-responsive" id="results-scroll">
-    <table class="table table-sm table-hover table-bordered align-middle" id="results-table">
-      <thead class="table-dark">
+  <div class="table-container">
+    <table id="results-table">
+      <thead>
         <tr>
-          <th class="text-center" title="Put or Call">Type</th>
-          <th class="text-center" title="Option strike price">Strike</th>
-          <th class="text-center" title="Expiration date">Expiration</th>
-          <th class="text-center" title="Days to expiration">DTE</th>
-          <th class="text-center" title="Current bid price">Bid</th>
-          <th class="text-center" title="Current ask price">Ask</th>
-          <th class="text-center" title="Mid-point of bid/ask spread">Mark</th>
-          <th class="text-center" title="Rate of change in option price per $1 move in the underlying (negative for puts)">Delta</th>
-          <th class="text-center" title="Implied volatility as a percentage">IV%</th>
-          <th class="text-center" title="Portion of the option premium above intrinsic value">Time Value</th>
-          <th class="text-center" title="Time value as a percentage of the underlying price">TV%</th>
-          <th class="text-center" title="Total number of outstanding open contracts">OI</th>
-          <th class="text-center" title="Number of contracts traded today">Volume</th>
-          <th class="text-center" title="Whether the option is in the money">ITM</th>
+          <th class="text-center">Type</th>
+          <th>Strike</th>
+          <th>Exp</th>
+          <th>DTE</th>
+          <th>Bid</th>
+          <th>Ask</th>
+          <th>Mark</th>
+          <th>Delta</th>
+          <th>IV%</th>
+          <th>TV</th>
+          <th>TV%</th>
+          <th>OI</th>
+          <th>Vol</th>
+          <th>ITM</th>
         </tr>
       </thead>
       <tbody>
         {% for opt in options %}
         <tr{% if opt.inTheMoney %} class="itm-row"{% endif %}>
-          <td class="text-center">
+          <td style="text-align: center;">
             <span class="badge {% if opt.putCall == 'PUT' %}badge-put{% else %}badge-call{% endif %}">
               {{ opt.putCall }}
             </span>
           </td>
-          <td class="text-end">${{ opt.strikePrice|floatformat:2 }}</td>
-          <td class="text-center">{{ opt.expirationDate }}</td>
-          <td class="text-end">{{ opt.daysToExpiration }}</td>
-          <td class="text-end">${{ opt.bid|floatformat:2 }}</td>
-          <td class="text-end">${{ opt.ask|floatformat:2 }}</td>
-          <td class="text-end">${{ opt.mark|floatformat:2 }}</td>
-          <td class="text-end">{{ opt.delta|floatformat:3 }}</td>
-          <td class="text-end">{{ opt.volatility|floatformat:1 }}%</td>
-          <td class="text-end">${{ opt.timeValue|floatformat:2 }}</td>
-          <td class="text-end">{{ opt.timeValuePct|floatformat:2 }}%</td>
-          <td class="text-end">{{ opt.openInterest }}</td>
-          <td class="text-end">{{ opt.volume }}</td>
-          <td class="text-center">{% if opt.inTheMoney %}&#10003;{% endif %}</td>
+          <td>${{ opt.strikePrice|floatformat:2 }}</td>
+          <td>{{ opt.expirationDate }}</td>
+          <td>{{ opt.daysToExpiration }}</td>
+          <td>${{ opt.bid|floatformat:2 }}</td>
+          <td>${{ opt.ask|floatformat:2 }}</td>
+          <td>${{ opt.mark|floatformat:2 }}</td>
+          <td>{{ opt.delta|floatformat:3 }}</td>
+          <td>{{ opt.volatility|floatformat:1 }}%</td>
+          <td>${{ opt.timeValue|floatformat:2 }}</td>
+          <td>{{ opt.timeValuePct|floatformat:2 }}%</td>
+          <td>{{ opt.openInterest }}</td>
+          <td>{{ opt.volume }}</td>
+          <td style="text-align: center;">{% if opt.inTheMoney %}✓{% endif %}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
   {% else %}
-  <div class="alert alert-info">No options matched the selected criteria.</div>
+  <div class="alert alert-info">No contracts match your current filters.</div>
   {% endif %}
   {% endif %}
 
 </div>
 
 <script>
-  // Expand/collapse criteria body when chevron is clicked
-  document.querySelectorAll('.criteria-expand').forEach(function(btn) {
-    var body = document.getElementById(btn.dataset.target);
-    // Sync initial chevron direction
-    btn.textContent = body && body.classList.contains('expanded') ? '▾' : '▸';
-    btn.addEventListener('click', function() {
-      if (!body) return;
-      var expanded = body.classList.toggle('expanded');
-      btn.textContent = expanded ? '▾' : '▸';
+  // Card summary: show active field values after card title
+  function updateCardSummary(card) {
+    var cb = card.querySelector('.criteria-toggle');
+    var summaryEl = card.querySelector('.card-summary');
+    if (!summaryEl) return;
+    if (!cb || !cb.checked) {
+      summaryEl.textContent = '';
+      return;
+    }
+    var params = card.querySelector('.params-grid');
+    if (!params) {
+      summaryEl.textContent = '';
+      return;
+    }
+    var parts = [];
+    params.querySelectorAll('input, select').forEach(function(el) {
+      if (el.value !== '' && el.value !== null) {
+        var opt = el.tagName === 'SELECT' ? el.options[el.selectedIndex] : null;
+        parts.push(opt ? opt.text : el.value);
+      }
+    });
+    summaryEl.textContent = parts.length ? '— ' + parts.join(', ') : '';
+  }
+
+  document.querySelectorAll('.card').forEach(function(card) {
+    card.querySelectorAll('input:not(.criteria-toggle), select').forEach(function(el) {
+      el.addEventListener('change', function() { updateCardSummary(card); });
+      el.addEventListener('input', function() { updateCardSummary(card); });
     });
   });
 
-  // Toggle parameter sections when criteria checkboxes are clicked
-  document.querySelectorAll('.criteria-toggle').forEach(function(cb) {
-    cb.addEventListener('change', function() {
-      var params = document.getElementById(this.dataset.target);
-      if (params) {
-        params.classList.toggle('visible', this.checked);
+  // Toggle card body visibility
+  document.querySelectorAll('.collapse-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var body = document.getElementById(this.dataset.target);
+      if (body) {
+        var isHidden = body.classList.toggle('hidden');
+        this.textContent = isHidden ? '▶' : '▼';
       }
     });
   });
 
-  // Restore select values from form POST data
-  // (Django template can't easily do dict lookups with dynamic keys for selects,
-  //  so we pass the raw form values as JSON and fix them up in JS.)
+  // Toggle parameter sections visibility based on checkbox
+  document.querySelectorAll('.criteria-toggle').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      var params = document.getElementById(this.dataset.target);
+      if (params) {
+        params.classList.toggle('hidden', !this.checked);
+        // Automatically expand the card when enabled
+        if (this.checked) {
+          var body = params.closest('.card-body');
+          if (body) {
+            body.classList.remove('hidden');
+            var btn = body.parentElement.querySelector('.collapse-btn');
+            if (btn) btn.textContent = '▼';
+          }
+        }
+      }
+      updateCardSummary(this.closest('.card'));
+    });
+  });
+
+  // Restore form values and expand active cards
   var formData = {{ form_data_json|safe }};
   Object.keys(formData).forEach(function(name) {
     var el = document.querySelector('[name="' + name + '"]');
-    if (el && el.tagName === 'SELECT') {
-      el.value = formData[name];
-    }
-    if (el && el.type === 'number' && formData[name] !== '') {
-      el.value = formData[name];
+    if (el) {
+      if (el.tagName === 'SELECT' || el.type === 'number' || el.type === 'text') {
+        el.value = formData[name];
+      }
     }
   });
+  // Update summaries after form values are restored
+  document.querySelectorAll('.card').forEach(function(card) { updateCardSummary(card); });
 
-  // ── Sortable results table ──────────────────────────────────
+  // Sortable table logic
   (function () {
     var table = document.getElementById('results-table');
     if (!table) return;
@@ -241,23 +495,17 @@
     var headers = Array.from(table.querySelectorAll('thead th'));
     var sortCol = -1, sortAsc = true;
 
-    // Wrap each header label and append an indicator span
     headers.forEach(function (th, idx) {
-      var label = th.textContent;
-      th.innerHTML =
-        '<span class="col-label">' + label + '</span>' +
-        '<span class="sort-ind ms-1"></span>';
+      th.innerHTML += '<span class="sort-icon"></span>';
       th.addEventListener('click', function () {
         if (sortCol === idx) sortAsc = !sortAsc;
         else { sortCol = idx; sortAsc = true; }
         sortTable(idx, sortAsc);
         updateIndicators();
-        markAndScrollATM();
       });
     });
 
     function getCellValue(row, idx) {
-      // Strip currency/percent/check symbols; parse as number when possible
       var text = row.cells[idx].textContent.trim().replace(/[$%,\u2713]/g, '');
       var num = parseFloat(text);
       return isNaN(num) ? text.toLowerCase() : num;
@@ -271,49 +519,36 @@
         var vb = getCellValue(b, col);
         if (typeof va === 'string' && typeof vb === 'string')
           return asc ? va.localeCompare(vb) : vb.localeCompare(va);
-        if (va < vb) return asc ? -1 : 1;
-        if (va > vb) return asc ? 1 : -1;
-        return 0;
+        return asc ? (va - vb) : (vb - va);
       });
       rows.forEach(function (r) { tbody.appendChild(r); });
     }
 
     function updateIndicators() {
       headers.forEach(function (th, idx) {
-        var ind = th.querySelector('.sort-ind');
-        if (ind) ind.textContent = idx === sortCol ? (sortAsc ? '▲' : '▼') : '';
+        var icon = th.querySelector('.sort-icon');
+        icon.textContent = idx === sortCol ? (sortAsc ? '▲' : '▼') : '';
       });
     }
 
-    // ── ATM row highlighting & scroll ───────────────────────────
+    // ATM Highlighting
     var underlyingPrice = {{ underlying_price|default:0 }};
-
-    function markAndScrollATM() {
-      if (!underlyingPrice) return;
-      var tbody = table.querySelector('tbody');
-      var rows = Array.from(tbody.rows);
-      var bestRow = null, bestDiff = Infinity;
-
-      rows.forEach(function (row) {
-        row.classList.remove('atm-row');
-        var strike = parseFloat(row.cells[1].textContent.replace(/[$,]/g, ''));
-        if (!isNaN(strike)) {
-          var diff = Math.abs(strike - underlyingPrice);
-          if (diff < bestDiff) { bestDiff = diff; bestRow = row; }
+    if (underlyingPrice > 0) {
+      var rows = Array.from(table.querySelectorAll('tbody tr'));
+      var closest = null;
+      var minDiff = Infinity;
+      rows.forEach(function(row) {
+        var strike = parseFloat(row.cells[1].textContent.replace('$', ''));
+        var diff = Math.abs(strike - underlyingPrice);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closest = row;
         }
       });
-
-      if (bestRow) {
-        bestRow.classList.add('atm-row');
-        var container = document.getElementById('results-scroll');
-        var theadHeight = table.querySelector('thead').offsetHeight;
-        var visibleHeight = container.clientHeight - theadHeight;
-        container.scrollTop = bestRow.offsetTop - theadHeight - visibleHeight / 2 + bestRow.offsetHeight / 2;
-      }
+      if (closest) closest.classList.add('atm-row');
     }
-
-    markAndScrollATM();
   })();
 </script>
 </body>
 </html>
+
