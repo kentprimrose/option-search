@@ -63,18 +63,52 @@
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #43474e; }
     input[type=number]::-webkit-inner-spin-button,
     input[type=number]::-webkit-outer-spin-button { opacity: 0.4; }
+    .itm-row td { color: #fcd34d !important; }
+    .atm-row { outline: 1px solid rgba(68,138,255,0.5); outline-offset: -1px; background: rgba(68,138,255,0.08) !important; }
+
+    /* Sidebar transition */
+    #sidebar {
+      transition: transform 0.3s ease;
+    }
+
+    /* Breakpoint layout notes:
+       - Mobile   (< 768px):  drawer sidebar, compact header, full-width main
+       - md iPad portrait (768-1023px): overlay sidebar, full header
+       - lg iPad landscape (1024-1279px): pinned sidebar w-60
+       - xl Desktop (1280px+): pinned sidebar w-72
+    */
   </style>
 </head>
-<body class="bg-surface text-on-surface">
+<body class="bg-surface text-on-surface overflow-hidden">
+
+<!-- Backdrop for mobile/tablet sidebar -->
+<div id="sidebar-backdrop"
+     class="fixed inset-0 z-30 bg-black/60 hidden lg:hidden"
+     onclick="closeSidebar()"></div>
 
 <form method="post" id="search-form">
   {% csrf_token %}
 
-  <!-- Fixed Header -->
-  <header class="fixed top-0 left-0 right-0 z-50 bg-surface-container-lowest border-b border-outline-variant/20 flex items-center justify-between px-6 py-2.5">
-    <span class="text-primary" style="font-family:'EB Garamond',Georgia,serif;font-weight:600;letter-spacing:0.04em;font-size:34px">The Quantitative Edge</span>
-    <div class="flex items-center gap-2">
-      <div class="relative">
+  <!-- Fixed Header: single row on sm+, two rows on mobile -->
+  <header class="fixed top-0 left-0 right-0 z-50 bg-surface-container-lowest border-b border-outline-variant/20
+                 flex flex-wrap items-center gap-2 px-3 md:px-6 py-2 sm:py-0 sm:h-14">
+
+    <!-- Left: filter toggle + brand -->
+    <div class="flex items-center gap-2 flex-1 sm:flex-none">
+      <button type="button" id="sidebar-toggle"
+              class="lg:hidden flex-shrink-0 p-1.5 rounded text-on-surface-variant hover:text-primary transition-colors"
+              onclick="toggleSidebar()" aria-label="Toggle filters">
+        <span class="material-symbols-outlined" style="font-size:22px">filter_list</span>
+      </button>
+      <span class="text-primary truncate"
+            style="font-family:'EB Garamond',Georgia,serif;font-weight:600;letter-spacing:0.04em;font-size:clamp(18px,3vw,34px)">
+        The Quantitative Edge
+      </span>
+    </div>
+
+    <!-- Search: full-width second row on mobile, inline on sm+ -->
+    <div class="flex items-center gap-2 w-full sm:w-auto sm:ml-auto">
+      <div class="relative flex-1 sm:flex-none">
         <input
           type="text"
           id="symbol"
@@ -83,23 +117,42 @@
           value="{{ symbol }}"
           autocomplete="off"
           required
-          class="bg-surface-container-high border border-outline-variant/30 text-on-surface text-xs px-4 py-1.5 rounded w-48 focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-on-surface-variant/50 uppercase transition-all"
+          class="bg-surface-container-high border border-outline-variant/30 text-on-surface text-sm sm:text-xs px-3 py-2 sm:py-1.5 rounded w-full sm:w-36 md:w-48 focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-on-surface-variant/50 uppercase transition-all"
           style="text-transform:uppercase"
         />
-        <span class="material-symbols-outlined absolute right-2.5 top-1.5 text-on-surface-variant" style="font-size:14px">search</span>
+        <span class="material-symbols-outlined absolute right-2.5 top-2 sm:top-1.5 text-on-surface-variant" style="font-size:15px">search</span>
       </div>
       <button
         type="submit"
-        class="bg-gradient-to-br from-primary to-primary-container text-on-primary text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded shadow-md shadow-primary/20 hover:shadow-primary/40 active:scale-[0.98] transition-all"
+        class="bg-gradient-to-br from-primary to-primary-container text-on-primary text-xs font-bold uppercase tracking-widest px-3 md:px-4 py-2 sm:py-1.5 rounded shadow-md shadow-primary/20 hover:shadow-primary/40 active:scale-[0.98] transition-all whitespace-nowrap flex-shrink-0"
       >Search</button>
     </div>
   </header>
 
-  <div class="flex pt-[53px] h-screen">
+  <!-- Page body: sidebar + main -->
+  <!-- pt accounts for header (56px) + mobile search bar (46px on small screens) -->
+  <div class="flex h-screen pt-[90px] sm:pt-14">
 
     <!-- Sidebar: Filter Criteria -->
-    <aside class="w-72 flex-shrink-0 h-full overflow-y-auto custom-scrollbar bg-surface-container-lowest border-r border-outline-variant/20 pt-6 pb-4 px-3 space-y-2">
-      <p class="text-[11px] uppercase tracking-widest text-on-surface-variant font-bold px-2 pb-1">Filters</p>
+    <!-- Mobile/iPad portrait: fixed drawer (z-40, off-screen by default)
+         iPad landscape (lg)+: static, pinned, w-60
+         Desktop (xl)+: w-72 -->
+    <aside id="sidebar"
+           class="fixed lg:static top-[90px] sm:top-14 bottom-0 left-0 z-40
+                  w-72 lg:w-60 xl:w-72
+                  flex-shrink-0 h-full overflow-y-auto custom-scrollbar
+                  bg-surface-container-lowest border-r border-outline-variant/20
+                  pt-6 pb-4 px-3 space-y-2
+                  -translate-x-full lg:translate-x-0">
+
+      <div class="flex items-center justify-between px-2 pb-1">
+        <p class="text-[11px] uppercase tracking-widest text-on-surface-variant font-bold">Filters</p>
+        <!-- Close button: mobile/iPad portrait only -->
+        <button type="button" class="lg:hidden text-on-surface-variant hover:text-on-surface transition-colors" onclick="closeSidebar()">
+          <span class="material-symbols-outlined" style="font-size:18px">close</span>
+        </button>
+      </div>
+
       {% for criterion in criteria %}
       <div class="bg-surface-container rounded border border-outline-variant/10">
         <div class="flex items-center gap-2 px-3 py-2.5">
@@ -159,10 +212,12 @@
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 overflow-y-auto custom-scrollbar bg-surface p-6">
+    <main class="flex-1 overflow-y-auto custom-scrollbar bg-surface
+                 p-3 sm:p-4 md:p-5 lg:p-6
+                 pt-3 sm:pt-4 md:pt-5 lg:pt-6">
 
       {% if error %}
-      <div class="mb-6 px-4 py-3 rounded bg-error/10 border border-error/30 text-error text-sm flex items-center gap-2">
+      <div class="mb-4 px-4 py-3 rounded bg-error/10 border border-error/30 text-error text-sm flex items-center gap-2">
         <span class="material-symbols-outlined text-sm">error</span>
         {{ error }}
       </div>
@@ -171,16 +226,19 @@
       {% if options is not None %}
 
       <!-- Ticker Header -->
-      <div class="mb-8">
-        <h1 class="font-headline text-3xl font-extrabold text-on-surface tracking-tight mb-1">
+      <div class="mb-5 md:mb-8">
+        <h1 class="font-headline font-extrabold text-on-surface tracking-tight mb-1
+                   text-xl sm:text-2xl md:text-3xl">
           {{ symbol }}
           {% if underlying_name %}
-          <span class="text-on-surface-variant font-medium text-lg ml-2">{{ underlying_name }}</span>
+          <span class="text-on-surface-variant font-medium ml-2
+                       text-sm sm:text-base md:text-lg">{{ underlying_name }}</span>
           {% endif %}
         </h1>
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-3 md:gap-4">
           {% if underlying_price %}
-          <span class="font-headline font-bold text-on-surface text-2xl">${{ underlying_price|floatformat:2 }}</span>
+          <span class="font-headline font-bold text-on-surface
+                       text-xl sm:text-2xl">${{ underlying_price|floatformat:2 }}</span>
           {% endif %}
           <span class="text-on-surface-variant text-xs uppercase tracking-widest font-bold">
             <strong class="text-on-surface">{{ result_count }}</strong> contract{{ result_count|pluralize }} found
@@ -195,45 +253,45 @@
           <table id="results-table" class="w-full text-left border-collapse">
             <thead>
               <tr class="bg-surface-container-high">
-                <th class="px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">Type <span class="sort-icon text-[8px] ml-0.5"></span></th>
-                <th class="px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">Strike <span class="sort-icon text-[8px] ml-0.5"></span></th>
-                <th class="px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">Expiration <span class="sort-icon text-[8px] ml-0.5"></span></th>
-                <th class="px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">DTE <span class="sort-icon text-[8px] ml-0.5"></span></th>
-                <th class="px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">Bid <span class="sort-icon text-[8px] ml-0.5"></span></th>
-                <th class="px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">Ask <span class="sort-icon text-[8px] ml-0.5"></span></th>
-                <th class="px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">Mark <span class="sort-icon text-[8px] ml-0.5"></span></th>
-                <th class="px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">Delta <span class="sort-icon text-[8px] ml-0.5"></span></th>
-                <th class="px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">IV% <span class="sort-icon text-[8px] ml-0.5"></span></th>
-                <th class="px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">TV <span class="sort-icon text-[8px] ml-0.5"></span></th>
-                <th class="px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">TV% <span class="sort-icon text-[8px] ml-0.5"></span></th>
-                <th class="px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">OI <span class="sort-icon text-[8px] ml-0.5"></span></th>
-                <th class="px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">Vol <span class="sort-icon text-[8px] ml-0.5"></span></th>
-                <th class="px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold text-center whitespace-nowrap select-none">ITM</th>
+                <th class="px-3 md:px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">Type <span class="sort-icon text-[8px] ml-0.5"></span></th>
+                <th class="px-3 md:px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">Strike <span class="sort-icon text-[8px] ml-0.5"></span></th>
+                <th class="px-3 md:px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">Expiration <span class="sort-icon text-[8px] ml-0.5"></span></th>
+                <th class="px-3 md:px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">DTE <span class="sort-icon text-[8px] ml-0.5"></span></th>
+                <th class="px-3 md:px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">Bid <span class="sort-icon text-[8px] ml-0.5"></span></th>
+                <th class="px-3 md:px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">Ask <span class="sort-icon text-[8px] ml-0.5"></span></th>
+                <th class="px-3 md:px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">Mark <span class="sort-icon text-[8px] ml-0.5"></span></th>
+                <th class="px-3 md:px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">Delta <span class="sort-icon text-[8px] ml-0.5"></span></th>
+                <th class="px-3 md:px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">IV% <span class="sort-icon text-[8px] ml-0.5"></span></th>
+                <th class="px-3 md:px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">TV <span class="sort-icon text-[8px] ml-0.5"></span></th>
+                <th class="px-3 md:px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">TV% <span class="sort-icon text-[8px] ml-0.5"></span></th>
+                <th class="px-3 md:px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">OI <span class="sort-icon text-[8px] ml-0.5"></span></th>
+                <th class="px-3 md:px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap select-none">Vol <span class="sort-icon text-[8px] ml-0.5"></span></th>
+                <th class="px-3 md:px-4 py-3 text-[11px] uppercase tracking-widest text-on-surface-variant font-extrabold text-center whitespace-nowrap select-none">ITM</th>
               </tr>
             </thead>
             <tbody>
               {% for opt in options %}
               <tr class="{% cycle 'bg-surface-container-low' 'bg-surface-container/40' %} hover:bg-surface-container-highest transition-colors duration-150 {% if opt.inTheMoney %}itm-row{% endif %}">
-                <td class="px-4 py-2.5 text-sm">
+                <td class="px-3 md:px-4 py-2.5 text-sm">
                   {% if opt.putCall == 'PUT' %}
                   <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-tertiary/15 text-tertiary">PUT</span>
                   {% else %}
                   <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/15 text-primary">CALL</span>
                   {% endif %}
                 </td>
-                <td class="px-4 py-2.5 text-sm font-extrabold text-on-surface font-mono">${{ opt.strikePrice|floatformat:2 }}</td>
-                <td class="px-4 py-2.5 text-sm text-on-surface font-mono">{{ opt.expirationDate }}</td>
-                <td class="px-4 py-2.5 text-sm text-on-surface-variant font-mono">{{ opt.daysToExpiration }}</td>
-                <td class="px-4 py-2.5 text-sm text-on-surface font-mono">${{ opt.bid|floatformat:2 }}</td>
-                <td class="px-4 py-2.5 text-sm text-on-surface font-mono">${{ opt.ask|floatformat:2 }}</td>
-                <td class="px-4 py-2.5 text-sm font-extrabold text-on-surface font-mono">${{ opt.mark|floatformat:2 }}</td>
-                <td class="px-4 py-2.5 text-sm text-on-surface font-mono">{{ opt.delta|floatformat:3 }}</td>
-                <td class="px-4 py-2.5 text-sm text-on-surface font-mono">{{ opt.volatility|floatformat:1 }}%</td>
-                <td class="px-4 py-2.5 text-sm text-on-surface font-mono">${{ opt.timeValue|floatformat:2 }}</td>
-                <td class="px-4 py-2.5 text-sm text-on-surface font-mono">{{ opt.timeValuePct|floatformat:2 }}%</td>
-                <td class="px-4 py-2.5 text-sm text-on-surface font-mono">{{ opt.openInterest }}</td>
-                <td class="px-4 py-2.5 text-sm text-on-surface font-mono">{{ opt.volume }}</td>
-                <td class="px-4 py-3 text-center">
+                <td class="px-3 md:px-4 py-2.5 text-sm font-extrabold text-on-surface font-mono">${{ opt.strikePrice|floatformat:2 }}</td>
+                <td class="px-3 md:px-4 py-2.5 text-sm text-on-surface font-mono">{{ opt.expirationDate }}</td>
+                <td class="px-3 md:px-4 py-2.5 text-sm text-on-surface-variant font-mono">{{ opt.daysToExpiration }}</td>
+                <td class="px-3 md:px-4 py-2.5 text-sm text-on-surface font-mono">${{ opt.bid|floatformat:2 }}</td>
+                <td class="px-3 md:px-4 py-2.5 text-sm text-on-surface font-mono">${{ opt.ask|floatformat:2 }}</td>
+                <td class="px-3 md:px-4 py-2.5 text-sm font-extrabold text-on-surface font-mono">${{ opt.mark|floatformat:2 }}</td>
+                <td class="px-3 md:px-4 py-2.5 text-sm text-on-surface font-mono">{{ opt.delta|floatformat:3 }}</td>
+                <td class="px-3 md:px-4 py-2.5 text-sm text-on-surface font-mono">{{ opt.volatility|floatformat:1 }}%</td>
+                <td class="px-3 md:px-4 py-2.5 text-sm text-on-surface font-mono">${{ opt.timeValue|floatformat:2 }}</td>
+                <td class="px-3 md:px-4 py-2.5 text-sm text-on-surface font-mono">{{ opt.timeValuePct|floatformat:2 }}%</td>
+                <td class="px-3 md:px-4 py-2.5 text-sm text-on-surface font-mono">{{ opt.openInterest }}</td>
+                <td class="px-3 md:px-4 py-2.5 text-sm text-on-surface font-mono">{{ opt.volume }}</td>
+                <td class="px-3 md:px-4 py-2.5 text-center">
                   {% if opt.inTheMoney %}
                   <span class="material-symbols-outlined text-primary" style="font-size:16px;font-variation-settings:'FILL' 1,'wght' 700,'GRAD' 0,'opsz' 24">check</span>
                   {% endif %}
@@ -255,8 +313,8 @@
       {% endif %}
 
       {% if options is None and not error %}
-      <div class="flex flex-col items-center justify-center h-full text-center text-on-surface-variant">
-        <span class="material-symbols-outlined text-5xl mb-4 text-outline">layers</span>
+      <div class="flex flex-col items-center justify-center h-full text-center text-on-surface-variant px-4">
+        <span class="material-symbols-outlined mb-4 text-outline" style="font-size:48px">layers</span>
         <p class="font-headline font-bold text-on-surface text-lg mb-1">Option Chain Scanner</p>
         <p class="text-sm">Enter a ticker symbol above to begin screening.</p>
       </div>
@@ -266,12 +324,31 @@
   </div>
 </form>
 
-<style>
-  .itm-row td { color: #fcd34d !important; }
-  .atm-row { outline: 1px solid rgba(68,138,255,0.5); outline-offset: -1px; background: rgba(68,138,255,0.08) !important; }
-</style>
-
 <script>
+  // Sidebar toggle (mobile / iPad portrait)
+  function openSidebar() {
+    document.getElementById('sidebar').classList.remove('-translate-x-full');
+    document.getElementById('sidebar-backdrop').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.add('-translate-x-full');
+    document.getElementById('sidebar-backdrop').classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+  function toggleSidebar() {
+    var sidebar = document.getElementById('sidebar');
+    sidebar.classList.contains('-translate-x-full') ? openSidebar() : closeSidebar();
+  }
+
+  // Close sidebar when resizing to lg+
+  window.addEventListener('resize', function() {
+    if (window.innerWidth >= 1024) {
+      document.getElementById('sidebar-backdrop').classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+  });
+
   // Toggle card body visibility
   document.querySelectorAll('.collapse-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
@@ -331,6 +408,7 @@
   // Restore form values
   var formData = {{ form_data_json|safe }};
   Object.keys(formData).forEach(function(name) {
+    // Only restore the first matching element (avoids double-setting the mobile duplicate input)
     var el = document.querySelector('[name="' + name + '"]');
     if (el && (el.tagName === 'SELECT' || el.type === 'number' || el.type === 'text')) {
       el.value = formData[name];
